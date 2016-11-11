@@ -1,0 +1,12 @@
+{
+  "bot_name" : "pinterest",
+  "bot_folder" : "pinterest",
+  "configuration" : {
+    "name":"string",
+    "key":"string",
+    "secret":"string",
+    "access_token":"string",
+    "callback_url":"string",
+    "scope":"string"
+  }
+}
