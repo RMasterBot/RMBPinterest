@@ -1,2 +1,2 @@
-# BotStarterKit
-Starter Kit for RMasterBot integration
+# RMBPinterest
+Pinterest Bot for RMasterBot
