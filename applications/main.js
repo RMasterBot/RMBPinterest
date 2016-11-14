@@ -35,6 +35,7 @@ Pinterest.prototype.apiCall = function(parameters, callback) {
     files: {}
   };
   var key;
+  var errorMessage = 'Something went wrong.';
 
   if(!this.isAccessTokenSetted()) {
     return callback('Access Token required', null);
@@ -90,6 +91,14 @@ Pinterest.prototype.apiCall = function(parameters, callback) {
       var data = JSON.parse(result.data);
       var responseData = data.data;
 
+      if(result.statusCode >= 400) {
+        if(data.message !== undefined) {
+          errorMessage = data.message;
+        }
+        callback(errorMessage, false);
+        return;
+      }
+      
       if(that.useModels && data.data !== null && parameters.output !== undefined && parameters.output.model !== undefined) {
         if(parameters.output.isArray !== undefined && parameters.output.isArray === true) {
           var max = data.data.length;
