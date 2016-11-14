@@ -18,7 +18,7 @@ function Pinterest(name, folder, allConfigurations){
     pathPrefix: "/v1/",
     httpModule: "https",
     hostname: "api.pinterest.com",
-    scopes: 'read_public'
+    scopes: 'read_public,write_public,read_relationships,write_relationships'
   };
 }
 
