@@ -41,11 +41,13 @@ Pinterest.prototype.apiCall = function(parameters, callback) {
   var errorMessage = 'Something went wrong.';
 
   if(!this.isAccessTokenSetted()) {
-    return callback('Access Token required', null);
+    callback('Access Token required', null);
+    return;
   }
 
   if(this.isCurrentAccessTokenCompatibleWithScope(parameters.scope) === false) {
-    return callback('Access Token Scope is incompatible', null);
+    callback('Access Token Scope is incompatible', null);
+    return;
   }
 
   if(parameters.method === undefined) {
@@ -56,6 +58,11 @@ Pinterest.prototype.apiCall = function(parameters, callback) {
     throw this.RError('RMBPinterest-002', 'Path is required');
   }
 
+  if(this.verifyRemainingRequestsBeforeCall && this.hasRemainingRequests() === false){
+    callback('No remaining Requests', null);
+    return;
+  }
+  
   requestParams.method = parameters.method;
   requestParams.path = parameters.path;
   if(requestParams.path.charAt(requestParams.path.length-1) !== '/') {
