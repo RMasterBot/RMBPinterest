@@ -3,10 +3,9 @@
   "bot_folder" : "pinterest",
   "configuration" : {
     "name":"string",
-    "key":"string",
-    "secret":"string",
-    "access_token":"string",
+    "consumer_key":"string",
+    "consumer_secret":"string",
     "callback_url":"string",
-    "scope":"string"
+    "scopes":"string"
   }
 }
