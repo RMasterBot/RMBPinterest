@@ -95,7 +95,7 @@ Pinterest.prototype.apiCall = function(parameters, callback) {
 
   requestParams.get = this.addQueryAccessToken(requestParams.get);
 
-  this.requestApi(requestParams, function(error, result){
+  this.request(requestParams, function(error, result){
     if(error !== false) {
       callback(error, false);
     }
