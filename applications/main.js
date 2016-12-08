@@ -1,7 +1,26 @@
 var Bot = require('../../core/bot.js');
 
+/**
+ * Pinterest Bot
+ * @class Pinterest
+ * @augments Bot
+ * @param {string} name
+ * @param {string} folder
+ * @param {Object} allConfigurations
+ * @constructor
+ */
 function Pinterest(name, folder, allConfigurations){
   Bot.call(this, name, folder, allConfigurations);
+
+  this.validHttpMethods = ['GET','POST','PATCH','DELETE'];
+  this.defaultValues.port = 443;
+  this.defaultValues.pathPrefix = '/v1/';
+  this.defaultValues.hostname = 'api.pinterest.com';
+  this.defaultValues.scopes = 'read_public,write_public,read_relationships,write_relationships';
+  this.defaultValues.httpModule = 'https';
+
+  this.defaultRemainingRequest = 200;
+  this.defaultRemainingTime = 60*60;
 
   this.fields = {
     user: ['id', 'username', 'first_name', 'last_name', 'bio', 'created_at', 'counts', 'image', 'account_type'],
@@ -10,157 +29,91 @@ function Pinterest(name, folder, allConfigurations){
     topic: ['id', 'name']
   };
   this.limit = 100;
-
-  this.validHttpMethods = ["GET","POST","PATCH","DELETE"];
-  this.defaultValues = {
-    port: 443,
-    path: "",
-    pathPrefix: "/v1/",
-    httpModule: "https",
-    hostname: "api.pinterest.com",
-    scopes: 'read_public,write_public,read_relationships,write_relationships'
-  };
-
-  this.defaultRemainingRequest = 200;
-  this.defaultRemainingTime = 60*60;
 }
 
 Pinterest.prototype = new Bot();
 Pinterest.prototype.constructor = Pinterest;
 
-Pinterest.prototype.apiCall = function(parameters, callback) {
-  var that = this;
-  var requestParams = {
-    method: '',
-    path: '',
-    get: {},
-    post: {},
-    files: {}
-  };
-  var key;
-  var errorMessage = 'Something went wrong.';
-
-  if(!this.isAccessTokenSetted()) {
-    callback('Access Token required', null);
-    return;
+/**
+ * Return a trimmed string
+ * @private
+ * @param {*} variable
+ */
+function getStringTrimmed(variable) {
+  if(typeof variable !== "string") {
+    return false;
   }
 
-  if(this.isCurrentAccessTokenCompatibleWithScope(parameters.scope) === false) {
-    callback('Access Token Scope is incompatible', null);
-    return;
+  variable = variable.trim();
+  if(variable.length < 1) {
+    return false;
   }
 
-  if(parameters.method === undefined) {
-    throw this.RError('RMBPinterest-001', 'Method is required');
+  return variable;
+}
+
+/**
+ * Prepare and complete parameters for request
+ * @param {Bot~doRequestParameters} parameters
+ * @param {Bot~requestCallback} callback
+ */
+Pinterest.prototype.prepareRequest = function(parameters, callback) {
+  parameters.useAccessToken = true;
+
+  if(parameters.get === undefined) {
+    parameters.get = {};
   }
 
-  if(parameters.path === undefined) {
-    throw this.RError('RMBPinterest-002', 'Path is required');
+  if(parameters.path.charAt(parameters.path.length-1) !== '/') {
+    parameters.path+= '/';
   }
 
-  if(this.verifyRemainingRequestsBeforeCall && this.hasRemainingRequests() === false){
-    callback('No remaining Requests', null);
-    return;
+  if(parameters.options === undefined) {
+    parameters.options = {};
   }
   
-  requestParams.method = parameters.method;
-  requestParams.path = parameters.path;
-  if(requestParams.path.charAt(requestParams.path.length-1) !== '/') {
-    requestParams.path+= '/';
+  if(parameters.options.useLimit !== undefined && parameters.options.useLimit === true) {
+    this.addQueryLimit(parameters);
   }
 
-  if(parameters.get !== undefined) {
-    for (key in parameters.get) {
-      if (parameters.get.hasOwnProperty(key)) {
-        requestParams.get[key] = parameters.get[key];
-      }
-    }
+  if(parameters.options.objectFields !== undefined) {
+    this.addQueryFields(parameters, parameters.options.objectFields);
   }
 
-  if(parameters.files !== undefined) {
-    for (key in parameters.files) {
-      if (parameters.files.hasOwnProperty(key)) {
-        requestParams.files[key] = parameters.files[key];
-      }
-    }
-  }
+  this.addQueryAccessToken(parameters);
 
-  if(parameters.useLimit !== undefined && parameters.useLimit === true) {
-    requestParams.get = this.addQueryLimit(requestParams.get);
-  }
-
-  if(parameters.objectFields !== undefined) {
-    requestParams.get = this.addQueryFields(requestParams.get, parameters.objectFields);
-  }
-
-  requestParams.get = this.addQueryAccessToken(requestParams.get);
-
-  this.request(requestParams, function(error, result){
-    if(error !== false) {
-      callback(error, false);
-    }
-    else {
-      that.updateRemainingRequests(result);
-
-      var data = JSON.parse(result.data);
-      var responseData = data.data;
-
-      if(result.statusCode >= 400) {
-        if(data.message !== undefined) {
-          errorMessage = data.message;
-        }
-        callback(errorMessage, false);
-        return;
-      }
-      
-      if(that.useModels && data.data !== null && parameters.output !== undefined && parameters.output.model !== undefined) {
-        if(parameters.output.isArray !== undefined && parameters.output.isArray === true) {
-          var max = data.data.length;
-          for(var i = 0; i < max; i++) {
-            data.data[i] = new that.models[parameters.output.model](data.data[i]);
-          }
-        }
-        else {
-          responseData = new that.models[parameters.output.model](data.data);
-        }
-      }
-
-      if(parameters.returnCursor !== undefined && parameters.returnCursor === true) {
-        callback(null, responseData, data.page);
-      }
-      else {
-        callback(null, responseData);
-      }
-    }
-  });
-
+  this.doRequest(parameters, callback);
 };
 
 Pinterest.prototype.me = function(callback) {
   var params = {
     path: 'me',
     scope: 'read_public',
-    objectFields: 'user',
     output: {
       model: 'User'
+    },
+    options: {
+      objectFields: 'user'
     }
   };
 
-  this.apiGet(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.myBoards = function(callback) {
   var params = {
     path: 'me/boards',
     scope: 'read_public',
-    objectFields: 'board',
     output: {
       model: 'Board',
       isArray: true
+    },
+    options: {
+      objectFields: 'board'
     }
   };
 
-  this.apiGet(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.mySuggestedBoards = function(pinId, callback) {
@@ -173,55 +126,61 @@ Pinterest.prototype.mySuggestedBoards = function(pinId, callback) {
   var params = {
     path: 'me/boards/suggested',
     scope: 'read_public',
-    objectFields: 'board',
     output: {
       model: 'Board',
       isArray: true
     },
     get: {
       pin: pinId
+    },
+    options: {
+      objectFields: 'board'
     }
   };
 
-  this.apiGet(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.myLikes = function(parameters, callback) {
   var params = {
     path: 'me/likes',
     scope: 'read_public',
-    objectFields: 'pin',
     useLimit: true,
     output: {
       model: 'Pin',
       isArray: true
     },
     returnCursor: true,
-    get: {}
+    get: {},
+    options: {
+      objectFields: 'pin'
+    }
   };
 
-  params.get = this.addQueryCursor(params.get, parameters);
+  this.addQueryCursor(params, parameters);
 
-  this.apiGet(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.myPins = function(parameters, callback) {
   var params = {
     path: 'me/pins',
     scope: 'read_public',
-    objectFields: 'pin',
     useLimit: true,
     output: {
       model: 'Pin',
       isArray: true
     },
     returnCursor: true,
-    get: {}
+    get: {},
+    options: {
+      objectFields: 'pin'
+    }
   };
 
-  params.get = this.addQueryCursor(params.get, parameters);
+  this.addQueryCursor(params, parameters);
 
-  this.apiGet(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.searchMyBoards = function(query, parameters, callback) {
@@ -234,7 +193,6 @@ Pinterest.prototype.searchMyBoards = function(query, parameters, callback) {
   var params = {
     path: 'me/search/boards',
     scope: 'read_public',
-    objectFields: 'board',
     useLimit: true,
     output: {
       model: 'Board',
@@ -243,12 +201,15 @@ Pinterest.prototype.searchMyBoards = function(query, parameters, callback) {
     returnCursor: true,
     get: {
       query: query
+    },
+    options: {
+      objectFields: 'board'
     }
   };
 
-  params.get = this.addQueryCursor(params.get, parameters);
+  this.addQueryCursor(params, parameters);
 
-  this.apiGet(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.searchMyPins = function(query, parameters, callback) {
@@ -261,7 +222,6 @@ Pinterest.prototype.searchMyPins = function(query, parameters, callback) {
   var params = {
     path: 'me/search/pins',
     scope: 'read_public',
-    objectFields: 'pin',
     useLimit: true,
     output: {
       model: 'Pin',
@@ -270,88 +230,99 @@ Pinterest.prototype.searchMyPins = function(query, parameters, callback) {
     returnCursor: true,
     get: {
       query: query
+    },
+    options: {
+      objectFields: 'pin'
     }
   };
 
-  params.get = this.addQueryCursor(params.get, parameters);
+  this.addQueryCursor(params, parameters);
 
-  this.apiGet(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.myFollowers = function(parameters, callback) {
   var params = {
     path: 'me/followers',
     scope: 'read_relationships',
-    objectFields: 'user',
     useLimit: true,
     output: {
       model: 'User',
       isArray: true
     },
     returnCursor: true,
-    get: {}
+    get: {},
+    options: {
+      objectFields: 'user',
+    }
   };
 
-  params.get = this.addQueryCursor(params.get, parameters);
+  this.addQueryCursor(params, parameters);
 
-  this.apiGet(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.myFollowingBoards = function(parameters, callback) {
   var params = {
     path: 'me/following/boards',
     scope: 'read_relationships',
-    objectFields: 'board',
     useLimit: true,
     output: {
       model: 'Board',
       isArray: true
     },
     returnCursor: true,
-    get: {}
+    get: {},
+    options: {
+      objectFields: 'board'
+    }
   };
 
-  params.get = this.addQueryCursor(params.get, parameters);
+  this.addQueryCursor(params, parameters);
 
-  this.apiGet(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.myFollowingInterests = function(parameters, callback) {
   var params = {
     path: 'me/following/interests',
     scope: 'read_relationships',
-    objectFields: 'topic',
     useLimit: true,
     output: {
       model: 'Topic',
       isArray: true
     },
     returnCursor: true,
-    get: {}
+    get: {},
+    options: {
+      objectFields: 'topic'
+    }
   };
 
-  params.get = this.addQueryCursor(params.get, parameters);
+  this.addQueryCursor(params, parameters);
 
-  this.apiGet(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.myFollowingUsers = function(parameters, callback) {
   var params = {
     path: 'me/following/users',
     scope: 'read_relationships',
-    objectFields: 'user',
     useLimit: true,
     output: {
       model: 'User',
       isArray: true
     },
     returnCursor: true,
-    get: {}
+    get: {},
+    options: {
+      objectFields: 'user'
+    }
   };
 
-  params.get = this.addQueryCursor(params.get, parameters);
+  this.addQueryCursor(params, parameters);
 
-  this.apiGet(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.getBoard = function(board, callback) {
@@ -364,13 +335,15 @@ Pinterest.prototype.getBoard = function(board, callback) {
   var params = {
     path: 'boards/'+ board,
     scope: 'read_public',
-    objectFields: 'board',
     output: {
       model: 'Board'
+    },
+    options: {
+      objectFields: 'board'
     }
   };
 
-  this.apiGet(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.getPinsInBoard = function(board, parameters, callback) {
@@ -383,19 +356,21 @@ Pinterest.prototype.getPinsInBoard = function(board, parameters, callback) {
   var params = {
     path: 'boards/'+ board + '/pins',
     scope: 'read_public',
-    objectFields: 'pin',
     useLimit: true,
     output: {
       model: 'Pin',
       isArray: true
     },
     returnCursor: true,
-    get: {}
+    get: {},
+    options: {
+      objectFields: 'pin'
+    }
   };
 
-  params.get = this.addQueryCursor(params.get, parameters);
-  
-  this.apiGet(params, callback);
+  this.addQueryCursor(params, parameters);
+
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.getPin = function(pinId, callback) {
@@ -408,13 +383,15 @@ Pinterest.prototype.getPin = function(pinId, callback) {
   var params = {
     path: 'pins/'+ pinId,
     scope: 'read_public',
-    objectFields: 'pin',
     output: {
       model: 'Pin'
+    },
+    options: {
+      objectFields: 'pin'
     }
   };
 
-  this.apiGet(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.followBoard = function(board, callback) {
@@ -425,6 +402,7 @@ Pinterest.prototype.followBoard = function(board, callback) {
   }
 
   var params = {
+    method: 'POST',
     path: 'me/following/boards',
     scope: 'write_relationships',
     get: {
@@ -432,11 +410,12 @@ Pinterest.prototype.followBoard = function(board, callback) {
     }
   };
 
-  this.apiPost(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.followUser = function(user, callback) {
   var params = {
+    method: 'POST',
     path: 'me/following/users',
     scope: 'write_relationships',
     get: {
@@ -444,7 +423,7 @@ Pinterest.prototype.followUser = function(user, callback) {
     }
   };
 
-  this.apiPost(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.createBoard = function(parameters, callback) {
@@ -455,6 +434,7 @@ Pinterest.prototype.createBoard = function(parameters, callback) {
   }
 
   var params = {
+    method: 'POST',
     path: 'boards',
     scope: 'write_public',
     output: {
@@ -466,7 +446,7 @@ Pinterest.prototype.createBoard = function(parameters, callback) {
     }
   };
 
-  this.apiPost(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.createPin = function(parameters, callback) {
@@ -475,8 +455,9 @@ Pinterest.prototype.createPin = function(parameters, callback) {
     callback('Parameters are invalid', null);
     return;
   }
-
+console.log(parameters);
   var params = {
+    method: 'POST',
     path: 'pins',
     scope: 'write_public',
     output: {
@@ -489,7 +470,7 @@ Pinterest.prototype.createPin = function(parameters, callback) {
     },
     files: {}
   };
-  
+
   if(parameters.image.length > 0) {
     params.files.image = parameters.image;
   }
@@ -503,7 +484,7 @@ Pinterest.prototype.createPin = function(parameters, callback) {
     callback('No image provided', null);
   }
 
-  this.apiPost(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.updateBoard = function(board, parameters, callback) {
@@ -514,6 +495,7 @@ Pinterest.prototype.updateBoard = function(board, parameters, callback) {
   }
 
   var params = {
+    method: 'PATCH',
     path: 'boards/' + board,
     scope: 'write_public',
     output: {
@@ -531,8 +513,8 @@ Pinterest.prototype.updateBoard = function(board, parameters, callback) {
       params.get.description = parameters.description;
     }
   }
-  
-  this.apiPatch(params, callback);
+
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.updatePin = function(pinId, parameters, callback) {
@@ -543,6 +525,7 @@ Pinterest.prototype.updatePin = function(pinId, parameters, callback) {
   }
 
   var params = {
+    method: 'PATCH',
     path: 'pins/' + pinId,
     scope: 'write_public',
     output: {
@@ -568,7 +551,7 @@ Pinterest.prototype.updatePin = function(pinId, parameters, callback) {
     }
   }
 
-  this.apiPatch(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.unfollowBoard = function(board, callback) {
@@ -579,20 +562,22 @@ Pinterest.prototype.unfollowBoard = function(board, callback) {
   }
 
   var params = {
+    method: 'DELETE',
     path: 'me/following/boards/' + board,
     scope: 'write_relationships'
   };
 
-  this.apiDelete(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.unfollowUser = function(user, callback) {
   var params = {
+    method: 'DELETE',
     path: 'me/following/users/' + user,
     scope: 'write_relationships'
   };
 
-  this.apiDelete(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.deleteBoard = function(board, callback) {
@@ -603,11 +588,12 @@ Pinterest.prototype.deleteBoard = function(board, callback) {
   }
 
   var params = {
+    method: 'DELETE',
     path: 'boards/' + board,
     scope: 'write_public'
   };
 
-  this.apiDelete(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 Pinterest.prototype.deletePin = function(pinId, callback) {
@@ -618,82 +604,96 @@ Pinterest.prototype.deletePin = function(pinId, callback) {
   }
 
   var params = {
+    method: 'DELETE',
     path: 'pins/' + pinId,
     scope: 'write_public'
   };
 
-  this.apiDelete(params, callback);
+  this.prepareRequest(params, callback);
 };
 
-Pinterest.prototype.apiGet = function(parameters, callback) {
-  parameters.method = "GET";
-  this.apiCall(parameters, callback);
-};
-
-Pinterest.prototype.apiPost = function(parameters, callback) {
-  parameters.method = "POST";
-  this.apiCall(parameters, callback);
-};
-
-Pinterest.prototype.apiPatch = function(parameters, callback) {
-  parameters.method = "PATCH";
-  this.apiCall(parameters, callback);
-};
-
-Pinterest.prototype.apiDelete = function(parameters, callback) {
-  parameters.method = "DELETE";
-  this.apiCall(parameters, callback);
-};
-
-Pinterest.prototype.addQueryFields = function(get, obj) {
-  if(this.fields[obj] === undefined || this.fields[obj].length < 1) {
-    return get;
+/**
+ * Add all fields of object an Pinterest object
+ * @param {Bot~doRequestParameters} parameters
+ * @param {string} objectFields
+ */
+Pinterest.prototype.addQueryFields = function(parameters, objectFields) {
+  if(this.fields[objectFields] === undefined || this.fields[objectFields].length < 1) {
+    return;
   }
 
-  var fields = this.fields[obj].join(',');
+  var fields = this.fields[objectFields].join(',');
 
-  if(obj === 'board') {
+  if(objectFields === 'board') {
     fields = fields.replace('creator', 'creator(' + this.fields['user'].join(',') + ')');
   }
 
-  if(obj === 'pin') {
+  if(objectFields === 'pin') {
     fields = fields.replace('creator', 'creator(' + this.fields['user'].join(',') + ')');
     fields = fields.replace('board', 'board(' + this.fields['board'].join(',') + ')');
   }
 
-  get.fields = fields;
-
-  return get;
-};
-
-Pinterest.prototype.addQueryLimit = function(get) {
-  get.limit = this.limit;
-
-  return get;
-};
-
-Pinterest.prototype.addQueryAccessToken = function(get) {
-  get.access_token = this.accessToken.access_token;
-
-  return get;
-};
-
-Pinterest.prototype.addQueryCursor = function(get, parameters) {
-  if(parameters instanceof Object && parameters.cursor !== undefined) {
-    get.cursor = parameters.cursor;
+  if(parameters.get === undefined) {
+    parameters.get = {};
   }
 
-  return get;
+  parameters.get.fields = fields;
 };
 
+/**
+ * Add limit to query parameters
+ * @param {Bot~doRequestParameters} parameters
+ */
+Pinterest.prototype.addQueryLimit = function(parameters) {
+  if(parameters.get === undefined) {
+    parameters.get = {};
+  }
+
+  parameters.get.limit = this.limit;
+};
+
+/**
+ * Add access token to query parameters
+ * @param {Bot~doRequestParameters} parameters
+ */
+Pinterest.prototype.addQueryAccessToken = function(parameters) {
+  if(parameters.get === undefined) {
+    parameters.get = {};
+  }
+
+  parameters.get.access_token = this.accessToken.access_token;
+};
+
+/**
+ * Add cursor to query
+ * @param {Bot~doRequestParameters} parameters
+ * @param {Object} options
+ */
+Pinterest.prototype.addQueryCursor = function(parameters, options) {
+  if(options instanceof Object && options.cursor !== undefined) {
+    parameters.get.cursor = options.cursor;
+  }
+};
+
+/**
+ * Get remaining requests from result 
+ * @param {Request~Response} resultFromRequest
+ * @return {Number}
+ */
 Pinterest.prototype.getRemainingRequestsFromResult = function(resultFromRequest) {
-  return parseInt(resultFromRequest.headers['x-ratelimit-remaining']);
+  return resultFromRequest.headers['x-ratelimit-remaining'] >> 0;
 };
 
+/**
+ * Get url for Access Token when you have to authorize an application
+ * @param {string} scopes
+ * @return {string} url
+ */
 Pinterest.prototype.getAccessTokenUrl = function(scopes) {
   if(scopes.length < 1) {
     scopes = this.defaultValues.scopes;
   }
+
   return 'https://api.pinterest.com/oauth/?'
     + 'response_type=code&'
     + 'redirect_uri=' + this.currentConfiguration.callback_url + '&'
@@ -701,6 +701,11 @@ Pinterest.prototype.getAccessTokenUrl = function(scopes) {
     + 'scope=' + scopes;
 };
 
+/**
+ * Extract response in data for Access Token
+ * @param {Object} req request from local node server
+ * @return {*} code or something from response
+ */
 Pinterest.prototype.extractResponseDataForAccessToken = function(req) {
   var query = require('url').parse(req.url, true).query;
 
@@ -711,6 +716,11 @@ Pinterest.prototype.extractResponseDataForAccessToken = function(req) {
   return query.code;
 };
 
+/**
+ * Request Access Token after getting code
+ * @param {string} responseData
+ * @param {Bot~requestAccessTokenCallback} callback
+ */
 Pinterest.prototype.requestAccessToken = function(responseData, callback) {
   var uri = 'grant_type=authorization_code&'
     + 'client_id=' + this.currentConfiguration.consumer_key + '&'
@@ -718,33 +728,48 @@ Pinterest.prototype.requestAccessToken = function(responseData, callback) {
     + 'code=' + responseData;
 
   var params = {
-    method: "POST",
+    method: 'POST',
     path: 'oauth/token?' + uri
   };
 
-  this.requestApi(params, function(error, result){
-    if(error !== false) {
+  this.request(params, function(error, result){
+    if(error) {
       callback(error, null);
       return;
     }
 
     if(result.statusCode === 200) {
-      callback(false, JSON.parse(result.data));
+      callback(null, JSON.parse(result.data));
     }
     else {
-      callback(JSON.parse(result.data), false);
+      callback(JSON.parse(result.data), null);
     }
   });
 };
 
+/**
+ * getAccessTokenFromAccessTokenData
+ * @param {*} accessTokenData
+ * @return {*}
+ */
 Pinterest.prototype.getAccessTokenFromAccessTokenData = function(accessTokenData) {
   return accessTokenData.access_token;
 };
 
+/**
+ * getTypeAccessTokenFromAccessTokenData
+ * @param {*} accessTokenData
+ * @return {*}
+ */
 Pinterest.prototype.getTypeAccessTokenFromAccessTokenData = function(accessTokenData) {
   return accessTokenData.token_type;
 };
 
+/**
+ * getUserForNewAccessToken
+ * @param {*} formatAccessToken
+ * @param {Bot~getUserForNewAccessTokenCallback} callback
+ */
 Pinterest.prototype.getUserForNewAccessToken = function(formatAccessToken, callback) {
   this.setCurrentAccessToken(formatAccessToken.access_token);
   this.me(function(err, user){
@@ -758,54 +783,14 @@ Pinterest.prototype.getUserForNewAccessToken = function(formatAccessToken, callb
   });
 };
 
-Pinterest.prototype.isValidUser = function(user, callback) {
-  if(user === undefined || user.trim().length < 1) {
-    callback(false);
-    return;
-  }
-
-  if(user.indexOf('/') !== -1) {
-    callback(false);
-    return;
-  }
-
-  this.checkValid(user, callback);
-};
-
-Pinterest.prototype.isValidBoard = function(board, callback) {
-  if(board === undefined || board.trim().length < 1) {
-    callback(false);
-    return;
-  }
-
-  if(board.indexOf('/') === -1) {
-    callback(false);
-    return;
-  }
-
-  this.checkValid(board, callback);
-};
-
-Pinterest.prototype.checkValid = function(url, callback) {
-  require('https').get('https://www.pinterest.com/' + url + '/', function(res) {
-    if(res.statusCode === 200) {
-      callback(true);
-    }
-    else {
-      callback(false);
-    }
-  }).on('error', function(e) {
-    callback(false);
-  });
-};
-
+/**
+ * Validate Pin Id
+ * @param {string} pinId
+ * @return {string|boolean} pinId
+ */
 Pinterest.prototype.validatePinId = function(pinId) {
-  if(typeof pinId !== "string") {
-    return false;
-  }
-
-  pinId = pinId.trim();
-  if(pinId.length < 1) {
+  pinId = getStringTrimmed(pinId);
+  if(pinId === false) {
     return false;
   }
 
@@ -816,52 +801,48 @@ Pinterest.prototype.validatePinId = function(pinId) {
   return pinId;
 };
 
+/**
+ * Validate query
+ * @param {string} query
+ * @return {string|boolean} query
+ */
 Pinterest.prototype.validateQuery = function(query) {
-  if(typeof query !== "string") {
-    return false;
-  }
-
-  query = query.trim();
-  if(query.length < 1) {
-    return false;
-  }
-
-  return query;
+  return getStringTrimmed(query);
 };
 
+/**
+ * Validate board
+ * @param {string} board
+ * @return {string|boolean} query
+ */
 Pinterest.prototype.validateBoard = function(board) {
-  if(typeof board !== "string") {
+  var slashPosition;
+
+  board = getStringTrimmed(board);
+  if(board === false) {
     return false;
   }
 
-  board = board.trim();
-  if(board.length < 1) {
-    return false;
-  }
-
-  var slashPosition = board.indexOf('/');
-  if(slashPosition === -1) {
-    return false;
-  }
-
-  if(slashPosition === (board.length - 1)) {
+  slashPosition = board.indexOf('/');
+  if(slashPosition === -1 || slashPosition === (board.length - 1)) {
     return false;
   }
 
   return board;
 };
 
+/**
+ * Validate parameters for creating a board 
+ * @param params
+ * @return {*}
+ */
 Pinterest.prototype.validateParametersForCreateBoard = function(params) {
   if(!(params instanceof Object)) {
     return false;
   }
 
-  if(params.name === undefined || typeof params.name !== "string") {
-    return false;
-  }
-
-  params.name = params.name.trim();
-  if(params.name.length < 1) {
+  params.name = getStringTrimmed(params.name);
+  if(params.name === false){
     return false;
   }
 
@@ -869,31 +850,28 @@ Pinterest.prototype.validateParametersForCreateBoard = function(params) {
     params.description = '';
   }
 
-  if(typeof params.name === "string") {
-    params.description = params.description.trim();
-  }
+  params.description = getStringTrimmed(params.description);
 
   return params;
 };
 
+/**
+ * Validate parameters for creating a pin
+ * @param params
+ * @return {*}
+ */
 Pinterest.prototype.validateParametersForCreatePin = function(params) {
   if(!(params instanceof Object)) {
     return false;
   }
 
-  if(params.board === undefined || typeof params.board !== "string") {
-    return false;
-  }
   params.board = this.validateBoard(params.board);
   if(params.board === false) {
     return false;
   }
 
-  if(params.note === undefined || typeof params.note !== "string") {
-    return false;
-  }
-  params.note = params.note.trim();
-  if(params.note.length < 1) {
+  params.note = getStringTrimmed(params.note);
+  if(params.note === false) {
     return false;
   }
 
@@ -901,9 +879,7 @@ Pinterest.prototype.validateParametersForCreatePin = function(params) {
     params.link = '';
   }
 
-  if(typeof params.link === "string") {
-    params.link = params.link.trim();
-  }
+  params.link = getStringTrimmed(params.link);
 
   params.image = params.image || '';
   params.image_url = params.image_url || '';
