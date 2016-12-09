@@ -10,6 +10,11 @@
  Scope:
    read_relationships
 */
+/**
+ * @param {Pinterest} bot
+ * @param {string[]} extraArguments
+ * @param {Job~Callback} callback
+ */
 module.exports = function(bot, extraArguments, callback) {
   var data = {
     cursor: extraArguments[0]

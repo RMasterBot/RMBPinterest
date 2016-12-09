@@ -10,6 +10,11 @@
  Scope:
    read_public
 */
+/**
+ * @param {Pinterest} bot
+ * @param {string[]} extraArguments
+ * @param {Job~Callback} callback
+ */
 module.exports = function(bot, extraArguments, callback) {
   bot.myBoards(function (error, boards) {
     if (error) {

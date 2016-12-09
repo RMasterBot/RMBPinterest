@@ -10,6 +10,11 @@
  Scope:
    write_public
 */
+/**
+ * @param {Pinterest} bot
+ * @param {string[]} extraArguments
+ * @param {Job~Callback} callback
+ */
 module.exports = function(bot, extraArguments, callback) {
   var pinId = extraArguments[0];
   var data = {

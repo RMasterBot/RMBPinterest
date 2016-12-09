@@ -6,7 +6,7 @@ var Bot = require('../../core/bot.js');
  * @augments Bot
  * @param {string} name
  * @param {string} folder
- * @param {Object} allConfigurations
+ * @param {Pinterest~Configuration[]} allConfigurations
  * @constructor
  */
 function Pinterest(name, folder, allConfigurations){
@@ -55,7 +55,7 @@ function getStringTrimmed(variable) {
 /**
  * Prepare and complete parameters for request
  * @param {Bot~doRequestParameters} parameters
- * @param {Bot~requestCallback} callback
+ * @param {Bot~requestCallback|*} callback
  */
 Pinterest.prototype.prepareRequest = function(parameters, callback) {
   parameters.useAccessToken = true;
@@ -85,6 +85,10 @@ Pinterest.prototype.prepareRequest = function(parameters, callback) {
   this.doRequest(parameters, callback);
 };
 
+/**
+ * API me
+ * @param {Pinterest~requestUserCallback} callback
+ */
 Pinterest.prototype.me = function(callback) {
   var params = {
     path: 'me',
@@ -100,6 +104,10 @@ Pinterest.prototype.me = function(callback) {
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API myBoards
+ * @param {Pinterest~requestArrayBoardCallback} callback
+ */
 Pinterest.prototype.myBoards = function(callback) {
   var params = {
     path: 'me/boards',
@@ -116,10 +124,15 @@ Pinterest.prototype.myBoards = function(callback) {
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API mySuggestedBoards
+ * @param {string} pinId
+ * @param {Pinterest~requestArrayBoardCallback} callback
+ */
 Pinterest.prototype.mySuggestedBoards = function(pinId, callback) {
   pinId = this.validatePinId(pinId);
   if(pinId === false) {
-    callback('Pin is invalid', null);
+    callback('Pin is invalid', null, null);
     return;
   }
 
@@ -141,7 +154,12 @@ Pinterest.prototype.mySuggestedBoards = function(pinId, callback) {
   this.prepareRequest(params, callback);
 };
 
-Pinterest.prototype.myLikes = function(parameters, callback) {
+/**
+ * API myLikes
+ * @param {Pinterest~Options} options
+ * @param {Pinterest~requestArrayPinCallback} callback
+ */
+Pinterest.prototype.myLikes = function(options, callback) {
   var params = {
     path: 'me/likes',
     scope: 'read_public',
@@ -157,12 +175,17 @@ Pinterest.prototype.myLikes = function(parameters, callback) {
     }
   };
 
-  this.addQueryCursor(params, parameters);
+  this.addQueryCursor(params, options);
 
   this.prepareRequest(params, callback);
 };
 
-Pinterest.prototype.myPins = function(parameters, callback) {
+/**
+ * API myPins
+ * @param {Pinterest~Options} options
+ * @param {Pinterest~requestArrayPinCallback} callback
+ */
+Pinterest.prototype.myPins = function(options, callback) {
   var params = {
     path: 'me/pins',
     scope: 'read_public',
@@ -178,15 +201,21 @@ Pinterest.prototype.myPins = function(parameters, callback) {
     }
   };
 
-  this.addQueryCursor(params, parameters);
+  this.addQueryCursor(params, options);
 
   this.prepareRequest(params, callback);
 };
 
-Pinterest.prototype.searchMyBoards = function(query, parameters, callback) {
+/**
+ * API searchMyBoards
+ * @param {string} query
+ * @param {Pinterest~Options} options
+ * @param {Pinterest~requestArrayBoardCallback} callback
+ */
+Pinterest.prototype.searchMyBoards = function(query, options, callback) {
   query = this.validateQuery(query);
   if(query === false) {
-    callback('Query is invalid', null);
+    callback('Query is invalid', null, null);
     return;
   }
 
@@ -207,15 +236,21 @@ Pinterest.prototype.searchMyBoards = function(query, parameters, callback) {
     }
   };
 
-  this.addQueryCursor(params, parameters);
+  this.addQueryCursor(params, options);
 
   this.prepareRequest(params, callback);
 };
 
-Pinterest.prototype.searchMyPins = function(query, parameters, callback) {
+/**
+ * API searchMyPins
+ * @param {string} query
+ * @param {Pinterest~Options} options
+ * @param {Pinterest~requestArrayPinCallback} callback
+ */
+Pinterest.prototype.searchMyPins = function(query, options, callback) {
   query = this.validateQuery(query);
   if(query === false) {
-    callback('Query is invalid', null);
+    callback('Query is invalid', null, null);
     return;
   }
 
@@ -236,12 +271,17 @@ Pinterest.prototype.searchMyPins = function(query, parameters, callback) {
     }
   };
 
-  this.addQueryCursor(params, parameters);
+  this.addQueryCursor(params, options);
 
   this.prepareRequest(params, callback);
 };
 
-Pinterest.prototype.myFollowers = function(parameters, callback) {
+/**
+ * API myFollowers
+ * @param {Pinterest~Options} options
+ * @param {Pinterest~requestArrayUserCallback} callback
+ */
+Pinterest.prototype.myFollowers = function(options, callback) {
   var params = {
     path: 'me/followers',
     scope: 'read_relationships',
@@ -257,12 +297,17 @@ Pinterest.prototype.myFollowers = function(parameters, callback) {
     }
   };
 
-  this.addQueryCursor(params, parameters);
+  this.addQueryCursor(params, options);
 
   this.prepareRequest(params, callback);
 };
 
-Pinterest.prototype.myFollowingBoards = function(parameters, callback) {
+/**
+ * API myFollowingBoards
+ * @param {Pinterest~Options} options
+ * @param {Pinterest~requestArrayBoardCallback} callback
+ */
+Pinterest.prototype.myFollowingBoards = function(options, callback) {
   var params = {
     path: 'me/following/boards',
     scope: 'read_relationships',
@@ -278,12 +323,17 @@ Pinterest.prototype.myFollowingBoards = function(parameters, callback) {
     }
   };
 
-  this.addQueryCursor(params, parameters);
+  this.addQueryCursor(params, options);
 
   this.prepareRequest(params, callback);
 };
 
-Pinterest.prototype.myFollowingInterests = function(parameters, callback) {
+/**
+ * API myFollowingInterests
+ * @param {Pinterest~Options} options
+ * @param {Pinterest~requestArrayTopicCallback} callback
+ */
+Pinterest.prototype.myFollowingInterests = function(options, callback) {
   var params = {
     path: 'me/following/interests',
     scope: 'read_relationships',
@@ -299,12 +349,17 @@ Pinterest.prototype.myFollowingInterests = function(parameters, callback) {
     }
   };
 
-  this.addQueryCursor(params, parameters);
+  this.addQueryCursor(params, options);
 
   this.prepareRequest(params, callback);
 };
 
-Pinterest.prototype.myFollowingUsers = function(parameters, callback) {
+/**
+ * API myFollowingUsers
+ * @param {Pinterest~Options} options
+ * @param {Pinterest~requestArrayUserCallback} callback
+ */
+Pinterest.prototype.myFollowingUsers = function(options, callback) {
   var params = {
     path: 'me/following/users',
     scope: 'read_relationships',
@@ -320,11 +375,16 @@ Pinterest.prototype.myFollowingUsers = function(parameters, callback) {
     }
   };
 
-  this.addQueryCursor(params, parameters);
+  this.addQueryCursor(params, options);
 
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API getBoard
+ * @param {string} board
+ * @param {Pinterest~requestBoardCallback} callback
+ */
 Pinterest.prototype.getBoard = function(board, callback) {
   board = this.validateBoard(board);
   if(board === false) {
@@ -346,10 +406,16 @@ Pinterest.prototype.getBoard = function(board, callback) {
   this.prepareRequest(params, callback);
 };
 
-Pinterest.prototype.getPinsInBoard = function(board, parameters, callback) {
+/**
+ * API getPinsInBoard
+ * @param {string} board
+ * @param {Pinterest~Options} options
+ * @param {Pinterest~requestArrayPinCallback} callback
+ */
+Pinterest.prototype.getPinsInBoard = function(board, options, callback) {
   board = this.validateBoard(board);
   if(board === false) {
-    callback('Board is invalid', null);
+    callback('Board is invalid', null, null);
     return;
   }
 
@@ -368,11 +434,16 @@ Pinterest.prototype.getPinsInBoard = function(board, parameters, callback) {
     }
   };
 
-  this.addQueryCursor(params, parameters);
+  this.addQueryCursor(params, options);
 
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API getPin
+ * @param {string} pinId
+ * @param {Pinterest~requestPinCallback} callback
+ */
 Pinterest.prototype.getPin = function(pinId, callback) {
   pinId = this.validatePinId(pinId);
   if(pinId === false) {
@@ -394,10 +465,15 @@ Pinterest.prototype.getPin = function(pinId, callback) {
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API followBoard
+ * @param {string} board
+ * @param {Pinterest~requestActionCallback} callback
+ */
 Pinterest.prototype.followBoard = function(board, callback) {
   board = this.validateBoard(board);
   if(board === false) {
-    callback('Board is invalid', null);
+    callback('Board is invalid');
     return;
   }
 
@@ -413,6 +489,11 @@ Pinterest.prototype.followBoard = function(board, callback) {
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API followUser
+ * @param {string} user
+ * @param {Pinterest~requestActionCallback} callback
+ */
 Pinterest.prototype.followUser = function(user, callback) {
   var params = {
     method: 'POST',
@@ -426,6 +507,11 @@ Pinterest.prototype.followUser = function(user, callback) {
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API createBoard
+ * @param {Pinterest~createBoardObject} parameters
+ * @param {Pinterest~requestBoardCallback} callback
+ */
 Pinterest.prototype.createBoard = function(parameters, callback) {
   parameters = this.validateParametersForCreateBoard(parameters);
   if(parameters === false) {
@@ -449,13 +535,18 @@ Pinterest.prototype.createBoard = function(parameters, callback) {
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API createPin
+ * @param {Pinterest~createPinObject} parameters
+ * @param {Pinterest~requestPinCallback} callback
+ */
 Pinterest.prototype.createPin = function(parameters, callback) {
   parameters = this.validateParametersForCreatePin(parameters);
   if(parameters === false) {
     callback('Parameters are invalid', null);
     return;
   }
-console.log(parameters);
+
   var params = {
     method: 'POST',
     path: 'pins',
@@ -487,6 +578,12 @@ console.log(parameters);
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API updateBoard
+ * @param {string} board
+ * @param {Pinterest~updateBoardObject} parameters
+ * @param {Pinterest~requestBoardCallback} callback
+ */
 Pinterest.prototype.updateBoard = function(board, parameters, callback) {
   board = this.validateBoard(board);
   if(board === false) {
@@ -517,6 +614,12 @@ Pinterest.prototype.updateBoard = function(board, parameters, callback) {
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API updatePin
+ * @param {string} pinId
+ * @param {Pinterest~updatePinObject} parameters
+ * @param {Pinterest~requestPinCallback} callback
+ */
 Pinterest.prototype.updatePin = function(pinId, parameters, callback) {
   pinId = this.validatePinId(pinId);
   if(pinId === false) {
@@ -554,10 +657,15 @@ Pinterest.prototype.updatePin = function(pinId, parameters, callback) {
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API unfollowBoard
+ * @param {string} board
+ * @param {Pinterest~requestActionCallback} callback
+ */
 Pinterest.prototype.unfollowBoard = function(board, callback) {
   board = this.validateBoard(board);
   if(board === false) {
-    callback('Board is invalid', null);
+    callback('Board is invalid');
     return;
   }
 
@@ -570,6 +678,11 @@ Pinterest.prototype.unfollowBoard = function(board, callback) {
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API unfollowUser
+ * @param {string} user
+ * @param {Pinterest~requestActionCallback} callback
+ */
 Pinterest.prototype.unfollowUser = function(user, callback) {
   var params = {
     method: 'DELETE',
@@ -580,10 +693,15 @@ Pinterest.prototype.unfollowUser = function(user, callback) {
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API deleteBoard
+ * @param {string} board
+ * @param {Pinterest~requestActionCallback} callback
+ */
 Pinterest.prototype.deleteBoard = function(board, callback) {
   board = this.validateBoard(board);
   if(board === false) {
-    callback('Board is invalid', null);
+    callback('Board is invalid');
     return;
   }
 
@@ -596,10 +714,15 @@ Pinterest.prototype.deleteBoard = function(board, callback) {
   this.prepareRequest(params, callback);
 };
 
+/**
+ * API deletePin
+ * @param {string} pinId
+ * @param {Pinterest~requestActionCallback} callback
+ */
 Pinterest.prototype.deletePin = function(pinId, callback) {
   pinId = this.validatePinId(pinId);
   if(pinId === false) {
-    callback('Pin is invalid', null);
+    callback('Pin is invalid');
     return;
   }
 
@@ -762,6 +885,7 @@ Pinterest.prototype.getAccessTokenFromAccessTokenData = function(accessTokenData
  * @return {*}
  */
 Pinterest.prototype.getTypeAccessTokenFromAccessTokenData = function(accessTokenData) {
+  //noinspection JSUnresolvedVariable
   return accessTokenData.token_type;
 };
 
@@ -771,8 +895,12 @@ Pinterest.prototype.getTypeAccessTokenFromAccessTokenData = function(accessToken
  * @param {Bot~getUserForNewAccessTokenCallback} callback
  */
 Pinterest.prototype.getUserForNewAccessToken = function(formatAccessToken, callback) {
-  this.setCurrentAccessToken(formatAccessToken.access_token);
+  var that = this;
+
+  that.setCurrentAccessToken(formatAccessToken.access_token);
+  that.verifyAccessTokenScopesBeforeCall = false;
   this.me(function(err, user){
+    that.verifyAccessTokenScopesBeforeCall = true;
     if(err) {
       callback(err, null);
     }
@@ -889,3 +1017,103 @@ Pinterest.prototype.validateParametersForCreatePin = function(params) {
 };
 
 module.exports = Pinterest;
+
+/**
+ * Pinterest Configuration
+ * @typedef {Object} Pinterest~Configuration
+ * @property {string} name
+ * @property {string} consumer_key
+ * @property {string} consumer_secret
+ * @property {string} access_token
+ * @property {string} callback_url
+ * @property {string} scopes
+ */
+/**
+ * Options Object
+ * @typedef {Object} Pinterest~Options
+ * @property {string} cursor
+ */
+/**
+ * ResultPagination Object
+ * @typedef {Object} Pinterest~ResultPagination
+ * @property {?string} cursor
+ * @property {?string} next
+ */
+/**
+ * create Board Object
+ * @typedef {Object} Pinterest~createBoardObject
+ * @property {string} name
+ * @property {string} description
+ */
+/**
+ * update Board Object
+ * @typedef {Pinterest~createBoardObject} Pinterest~updateBoardObject
+ */
+/**
+ * create Pin Object
+ * @typedef {Object} Pinterest~createPinObject
+ * @property {string} board
+ * @property {string} note
+ * @property {string} link
+ * @property {string} [image]
+ * @property {string} [image_url]
+ * @property {string} [image_base64]
+ */
+/**
+ * update Pin Object
+ * @typedef {Object} Pinterest~updatePinObject
+ * @property {string} board
+ * @property {string} note
+ * @property {string} link
+ */
+/**
+ * Request callback contain user
+ * @callback Pinterest~requestUserCallback
+ * @param {Error|string|null} error - Error
+ * @param {User} user - User
+ */
+/**
+ * Request callback contain board
+ * @callback Pinterest~requestBoardCallback
+ * @param {Error|string|null} error - Error
+ * @param {Board} board - Board
+ */
+/**
+ * Request callback contain pin
+ * @callback Pinterest~requestPinCallback
+ * @param {Error|string|null} error - Error
+ * @param {Pin} pin - Pin
+ */
+/**
+ * Request callback contains array of users
+ * @callback Pinterest~requestArrayUserCallback
+ * @param {Error|string|null} error - Error
+ * @param {User[]} users - Array of Users
+ * @param {?Pinterest~ResultPagination} pagination - Pagination
+ */
+/**
+ * Request callback contains array of boards
+ * @callback Pinterest~requestArrayBoardCallback
+ * @param {Error|string|null} error - Error
+ * @param {Board[]} boards - Array of Boards
+ * @param {?Pinterest~ResultPagination} pagination - Pagination
+ */
+/**
+ * Request callback contains array of pins
+ * @callback Pinterest~requestArrayPinCallback
+ * @param {Error|string|null} error - Error
+ * @param {Pin[]} pins - Array of Pins
+ * @param {?Pinterest~ResultPagination} pagination - Pagination
+ */
+/**
+ * Request callback contains array of topics
+ * @callback Pinterest~requestArrayTopicCallback
+ * @param {Error|string|null} error - Error
+ * @param {Topic[]} topics - Array of Topics
+ * @param {?Pinterest~ResultPagination} pagination - Pagination
+ */
+/**
+ * Request callback after action
+ * @callback Pinterest~requestActionCallback
+ * @param {Error|string|null} error - Error
+ */
