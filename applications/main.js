@@ -1,4 +1,4 @@
-var Bot = require('../../core/bot.js');
+var Bot = require(require('path').join('..','..','core','bot.js'));
 
 /**
  * Pinterest Bot
