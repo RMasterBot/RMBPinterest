@@ -1,4 +1,4 @@
-var User = require(__dirname + '/user.js');
+var User = require(require('path').join(__dirname, 'User.js'));
 /**
  * Board Model
  * @class Board

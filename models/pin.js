@@ -1,7 +1,7 @@
-var User = require(__dirname + '/user.js');
-var Board = require(__dirname + '/board.js');
-var Attribution = require(__dirname + '/attribution.js');
-var Metadata = require(__dirname + '/metadata.js');
+var User = require(require('path').join(__dirname, 'User.js'));
+var Board = require(require('path').join(__dirname, 'Board.js'));
+var Attribution = require(require('path').join(__dirname, 'Attribution.js'));
+var Metadata = require(require('path').join(__dirname, 'Metadata.js'));
 /**
  * Pin Model
  * @class Pin
