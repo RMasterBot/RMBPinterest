@@ -813,15 +813,11 @@ Pinterest.prototype.getRemainingRequestsFromResult = function(resultFromRequest)
  * @return {string} url
  */
 Pinterest.prototype.getAccessTokenUrl = function(scopes) {
-  if(scopes.length < 1) {
-    scopes = this.defaultValues.scopes;
-  }
-
   return 'https://api.pinterest.com/oauth/?'
     + 'response_type=code&'
     + 'redirect_uri=' + this.currentConfiguration.callback_url + '&'
     + 'client_id=' + this.currentConfiguration.consumer_key + '&'
-    + 'scope=' + scopes;
+    + 'scope=' + this.getScopeForAccessTokenServer(scopes);
 };
 
 /**
