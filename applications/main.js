@@ -815,7 +815,6 @@ Pinterest.prototype.getRemainingRequestsFromResult = function(resultFromRequest)
 Pinterest.prototype.getAccessTokenUrl = function(scopes) {
   if(scopes.length < 1) {
     scopes = this.defaultValues.scopes;
-    this.scopes = this.defaultValues.scopes;
   }
 
   return 'https://api.pinterest.com/oauth/?'
