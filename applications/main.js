@@ -810,14 +810,16 @@ Pinterest.prototype.getRemainingRequestsFromResult = function(resultFromRequest)
 /**
  * Get url for Access Token when you have to authorize an application
  * @param {string} scopes
- * @return {string} url
+ * @param {*} callback
  */
-Pinterest.prototype.getAccessTokenUrl = function(scopes) {
-  return 'https://api.pinterest.com/oauth/?'
+Pinterest.prototype.getAccessTokenUrl = function(scopes, callback) {
+  var url = 'https://api.pinterest.com/oauth/?'
     + 'response_type=code&'
     + 'redirect_uri=' + this.currentConfiguration.callback_url + '&'
     + 'client_id=' + this.currentConfiguration.consumer_key + '&'
     + 'scope=' + this.getScopeForAccessTokenServer(scopes);
+
+  callback(url);
 };
 
 /**
