@@ -1,4 +1,4 @@
-api = {
+module.exports = {
   endpoints:[
     {
       method: 'get',
@@ -314,5 +314,3 @@ api = {
     }
   ]
 };
-
-global.api = api;
