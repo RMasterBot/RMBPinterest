@@ -3,4 +3,7 @@ node_js:
   - "4"
 before_install:
   - "npm install rmasterbot -g"
-script: node /test/pinterest.js
+  - "rmbot install $TRAVIS_BUILD_DIR -s"
+script:
+  - cd $HOME/rmasterbot
+  - mocha test/bots/pinterest --recursive
