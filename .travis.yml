@@ -3,7 +3,10 @@ node_js:
   - "4"
 before_install:
   - "npm install rmasterbot -g"
-  - "rmbot install $TRAVIS_BUILD_DIR -s"
+  - "npm install chai -g"
+  - "npm install mocha -g"
+  - "npm install sinon -g"
+  - "rmbot install pinterest -s"
 script:
-  - cd $HOME/rmasterbot
+  - cd /home/travis/.nvm/versions/node/v4.8.2/lib/node_modules/rmasterbot/
   - mocha test/bots/pinterest --recursive
