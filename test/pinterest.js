@@ -51,5 +51,21 @@ describe('Pinterest', function(){
       assert.strictEqual(instance.defaultValues.port, 443, 'Port not equal to 443');
     });
   });
-  
+
+  describe('me', function(){
+    var rmasterbot = require('../../../rmasterbot.js');
+    /**
+     * Pinterest pinterest
+     */
+    var pinterestBot = rmasterbot.getBot('pinterest');
+    pinterestBot.setAccessToken({access_token: process.env.ACCESS_TOKEN});
+    pinterestBot.verifyAccessTokenScopesBeforeCall = false;
+
+    it('should have a user object with username = rancoud', function(done){
+      pinterestBot.me(function(err, data){
+        assert.strictEqual(data.getUsername(), 'rancoud', 'Username not equal to rancoud');
+        done();
+      });
+    });
+  });
 });
